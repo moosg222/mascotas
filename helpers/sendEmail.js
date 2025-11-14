@@ -14,7 +14,7 @@ export default async function sendEmail(to, subject, htmlContent) {
     const emailData = {
       sender: {
         name: "Adopta tu Mascota",
-        email: "no-reply@adopta-mascota.com", // No necesita dominio verificado
+        email: "moosg222@gmail.com", // No necesita dominio verificado
       },
       to: [{ email: to }],
       subject,
