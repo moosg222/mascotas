@@ -81,7 +81,7 @@ class UsuariosController {
       });
 
       const token = generarToken(email, rolAsignado.nombre, "2h");
-      const link = `http://localhost:5000/usuarios/verificarEmail?token=${token}`;
+      const link = `https://padoptatumascota.netlify.app/usuarios/verificarEmail?token=${token}`;
 
       await sendEmail(
         email,
@@ -261,7 +261,7 @@ class UsuariosController {
           .json({ message: "Tu cuenta ya está verificada" });
 
       const token = generarToken(email, usuario.rol, "2h");
-      const link = `http://localhost:5000/usuarios/verificarEmail?token=${token}`;
+      const link = `https://padoptatumascota.netlify.app/usuarios/verificarEmail?token=${token}`;
       await sendEmail(
         email,
         "Verificación de correo",
