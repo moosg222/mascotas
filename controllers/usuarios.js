@@ -231,18 +231,18 @@ class UsuariosController {
   async verificarEmail(req, res) {
     try {
       const { token } = req.query;
-      if (!token) return res.redirect("/verificarEmail?estado=error");
+      if (!token) return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
 
       const { email } = verificarJWT(token);
       const usuario = await usuariosModelo.findByEmail(email);
-      if (!usuario) return res.redirect("/verificarEmail?estado=error");
+      if (!usuario) return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
 
       if (!usuario.verificado)
         await usuariosModelo.updateByEmail(email, { verificado: true });
-      return res.redirect("/verificarEmail?estado=ok");
+      return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=ok");
     } catch (error) {
       console.error(error);
-      return res.redirect("/verificarEmail?estado=error");
+      return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
     }
   }
 
