@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export default async function sendEmail(to, subject, htmlContent) {
   try {
     const result = await resend.emails.send({
-      from: "Adopta Mascotas <no-reply@resend.dev>",
+      from: "Adopta tu Mascota <moosg222@gmail.com>",
       to,
       subject,
       html: htmlContent,

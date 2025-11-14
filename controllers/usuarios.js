@@ -211,7 +211,7 @@ class UsuariosController {
         return res.status(404).json({ message: "Correo no registrado" });
 
       const token = generarToken(email, usuario.rol, "1h");
-      const link = `http://localhost:5000/reset-password?token=${token}`;
+      const link = `https://padoptatumascota.netlify.app/reset-password?token=${token}`;
 
       await sendEmail(
         email,
