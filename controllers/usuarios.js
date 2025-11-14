@@ -315,7 +315,7 @@ class UsuariosController {
       }
 
       // Usando deleteOne de Mongoose
-      await usuariosModelo.deleteOne({ _id: usuario._id });
+      await usuariosModelo.delete({ _id: usuario._id });
 
       return res
         .status(200)
