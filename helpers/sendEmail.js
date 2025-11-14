@@ -1,13 +1,17 @@
 import { Resend } from "resend";
 import "dotenv/config";
 
+
+
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+console.log("RESEND_API_KEY:", process.env.RESEND_API_KEY ? "CARGADA" : "VACÍA");
 
 export default async function sendEmail(to, subject, htmlContent) {
   try {
     const result = await resend.emails.send({
-      from: "Adopta tu Mascota <moosg222@gmail.com>",
-      to,
+      from: "<no-reply@resend.dev>",
+      to:[to,"moosg222@gmail.com"] ,
       subject,
       html: htmlContent,
     });

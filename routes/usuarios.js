@@ -7,7 +7,7 @@ route.post("/register", UsuariosController.register.bind(UsuariosController));
 route.post("/login", UsuariosController.login);
 route.get("/perfil", verificarToken, UsuariosController.profile);
 route.put("/perfil", verificarToken, UsuariosController.actualizarPerfil);
-route.delete("/perfil", verificarToken, UsuariosController.deleteProfile);
+route.delete("/perfil", verificarToken, UsuariosController.deleteProfile.bind(UsuariosController));
 route.post("/recuperar", UsuariosController.solicitarRestablecimiento);
 route.post("/reset-password", UsuariosController.resetPassword);
 route.get("/verificarEmail", UsuariosController.verificarEmail);
