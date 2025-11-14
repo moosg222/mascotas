@@ -198,8 +198,8 @@ class UsuariosController {
 
       const token = generarToken(email, usuario.rol, "1h");
 
-      // Link hacia backend 💡
-      const link = `https://mascotas-production-7bb1.up.railway.app/usuarios/reset-password?token=${token}`;
+      // Link hacia frontend 💡
+      const link = `https://padoptatumascota.netlify.app/reset-password?token=${token}`;
 
       await sendEmail(
         email,
