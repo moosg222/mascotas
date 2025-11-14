@@ -1,25 +1,32 @@
-import { Resend } from "resend";
+import brevo from "@getbrevo/brevo";
 import "dotenv/config";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function sendEmail(to, subject, htmlContent) {
   try {
-    console.log(
-      "RESEND_API_KEY:",
-      process.env.RESEND_API_KEY ? "CARGADA" : "VACÍA"
+    // Configurar cliente Brevo API
+    const client = new brevo.TransactionalEmailsApi();
+    client.setApiKey(
+      brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.BREVO_API_KEY
     );
-    const result = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: [to, "moosg222@gmail.com"],
-      subject,
-      html: htmlContent,
-    });
 
-    console.log("Correo enviado:", result);
-    return result;
+    // Payload del correo
+    const emailData = {
+      sender: {
+        name: "Adopta tu Mascota",
+        email: "no-reply@adopta-mascota.com", // No necesita dominio verificado
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+    };
+
+    const response = await client.sendTransacEmail(emailData);
+    console.log("Correo enviado correctamente:", response.messageId);
+
+    return response;
   } catch (error) {
-    console.error("Error enviando correo:", error);
-    throw new Error("No se pudo enviar el correo");
+    console.error("Error enviando correo con Brevo:", error);
+    throw error;
   }
 }
