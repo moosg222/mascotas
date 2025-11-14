@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 
 class UsuariosController {
   // ========================
-  // Helper: Generar HTML Email
+  // Helper: Plantilla de email
   // ========================
   generarHTMLCorreo(tipo, link) {
     const templates = {
@@ -39,7 +39,6 @@ class UsuariosController {
           a.button { display:inline-block; padding:14px 28px; background-color:${color}; color:#fff !important; font-weight:bold; text-decoration:none; border-radius:6px; transition:background-color 0.3s; }
           a.button:hover { opacity:0.85; }
           small { display:block; margin-top:20px; font-size:12px; color:#9ca3af; }
-          @media(max-width:480px){ h1{font-size:20px;} p{font-size:14px;} .email-container{padding:15px;} a.button{padding:12px 20px;} }
         </style>
       </head>
       <body>
@@ -54,9 +53,9 @@ class UsuariosController {
     `;
   }
 
-  // ========================
+  // =====================================================
   // Registrar usuario
-  // ========================
+  // =====================================================
   async register(req, res) {
     try {
       const { nombre, telefono, clave, email } = req.body;
@@ -68,10 +67,11 @@ class UsuariosController {
 
       const claveEncryptada = await bcrypt.hash(clave, 10);
       const rolAsignado = await rolesModelo.findByRol(rol);
+
       if (!rolAsignado)
         return res.status(400).json({ message: "Rol no válido" });
 
-      const nuevoUsuario = await usuariosModelo.create({
+      await usuariosModelo.create({
         nombre,
         telefono,
         clave: claveEncryptada,
@@ -80,8 +80,9 @@ class UsuariosController {
         rol: rolAsignado._id,
       });
 
+      // 🔥 TOKEN CORRECTO → BACKEND (Railway)
       const token = generarToken(email, rolAsignado.nombre, "2h");
-      const link = `https://padoptatumascota.netlify.app/usuarios/verificarEmail?token=${token}`;
+      const link = `https://mascotas-production-7bb1.up.railway.app/usuarios/verificarEmail?token=${token}`;
 
       await sendEmail(
         email,
@@ -89,22 +90,21 @@ class UsuariosController {
         this.generarHTMLCorreo("verificar", link)
       );
 
-      res.status(200).json({
-        message: "Usuario registrado. Revisa tu correo para activarlo.",
-      });
+      res.status(200).json({ message: "Usuario registrado. Revisa tu correo." });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Error al registrar usuario" });
     }
   }
 
-  // ========================
+  // =====================================================
   // Login usuario
-  // ========================
+  // =====================================================
   async login(req, res) {
     try {
       const { email, clave } = req.body;
       const usuario = await usuariosModelo.findByEmail(email);
+
       if (!usuario)
         return res.status(404).json({ message: "Perfil no encontrado" });
 
@@ -120,22 +120,20 @@ class UsuariosController {
       const token = generarToken(email, usuario.rol);
       const { clave: _, ...usuarioSinClave } = usuario.toObject();
 
-      res
-        .status(200)
-        .json({ message: "Login exitoso", token, usuario: usuarioSinClave });
+      res.status(200).json({ message: "Login exitoso", token, usuario: usuarioSinClave });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Error en login" });
     }
   }
 
-  // ========================
+  // =====================================================
   // Perfil usuario
-  // ========================
+  // =====================================================
   async profile(req, res) {
     try {
-      const email = req.emailConectado;
-      const usuario = await usuariosModelo.findByEmail(email);
+      const usuario = await usuariosModelo.findByEmail(req.emailConectado);
+
       if (!usuario)
         return res.status(404).json({ message: "Usuario no encontrado" });
 
@@ -147,14 +145,13 @@ class UsuariosController {
     }
   }
 
-  // ========================
+  // =====================================================
   // Actualizar perfil
-  // ========================
+  // =====================================================
   async actualizarPerfil(req, res) {
     try {
       const emailConectado = req.emailConectado;
-      const { nombre, email, telefono, passwordActual, nuevaPassword } =
-        req.body;
+      const { nombre, email, telefono, passwordActual, nuevaPassword } = req.body;
 
       const usuario = await usuariosModelo.findByEmail(emailConectado);
       if (!usuario)
@@ -168,31 +165,19 @@ class UsuariosController {
 
       if (nuevaPassword) {
         if (!passwordActual)
-          return res.status(400).json({
-            message: "Debe ingresar la contraseña actual para cambiarla",
-          });
-        const claveCorrecta = await bcrypt.compare(
-          passwordActual,
-          usuario.clave
-        );
+          return res.status(400).json({ message: "Debe ingresar la contraseña actual" });
+
+        const claveCorrecta = await bcrypt.compare(passwordActual, usuario.clave);
         if (!claveCorrecta)
-          return res
-            .status(401)
-            .json({ message: "Contraseña actual incorrecta" });
+          return res.status(401).json({ message: "Contraseña actual incorrecta" });
 
         datosActualizados.clave = await bcrypt.hash(nuevaPassword, 10);
       }
 
-      const usuarioActualizado = await usuariosModelo.updateByEmail(
-        emailConectado,
-        datosActualizados
-      );
-      const token = generarToken(
-        usuarioActualizado.email,
-        usuarioActualizado.rol
-      );
-      const { clave, ...usuarioSinClave } = usuarioActualizado.toObject();
+      const usuarioActualizado = await usuariosModelo.updateByEmail(emailConectado, datosActualizados);
+      const token = generarToken(usuarioActualizado.email, usuarioActualizado.rol);
 
+      const { clave, ...usuarioSinClave } = usuarioActualizado.toObject();
       res.status(200).json({ usuario: usuarioSinClave, token });
     } catch (error) {
       console.error(error);
@@ -200,24 +185,28 @@ class UsuariosController {
     }
   }
 
-  // ========================
-  // Solicitar restablecimiento contraseña
-  // ========================
+  // =====================================================
+  // Solicitar restablecimiento
+  // =====================================================
   async solicitarRestablecimiento(req, res) {
     try {
       const { email } = req.body;
+
       const usuario = await usuariosModelo.findByEmail(email);
       if (!usuario)
         return res.status(404).json({ message: "Correo no registrado" });
 
       const token = generarToken(email, usuario.rol, "1h");
-      const link = `https://padoptatumascota.netlify.app/reset-password?token=${token}`;
+
+      // Link hacia backend 💡
+      const link = `https://mascotas-production-7bb1.up.railway.app/usuarios/reset-password?token=${token}`;
 
       await sendEmail(
         email,
         "Restablecer contraseña",
         this.generarHTMLCorreo("reset", link)
       );
+
       res.status(200).json({ message: "Correo enviado correctamente" });
     } catch (error) {
       console.error(error);
@@ -225,104 +214,106 @@ class UsuariosController {
     }
   }
 
-  // ========================
+  // =====================================================
   // Verificar email
-  // ========================
+  // =====================================================
   async verificarEmail(req, res) {
     try {
       const { token } = req.query;
-      if (!token) return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
+      if (!token)
+        return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
 
       const { email } = verificarJWT(token);
+
       const usuario = await usuariosModelo.findByEmail(email);
-      if (!usuario) return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
+      if (!usuario)
+        return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
 
       if (!usuario.verificado)
         await usuariosModelo.updateByEmail(email, { verificado: true });
+
       return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=ok");
     } catch (error) {
-      console.error(error);
+      console.error("Error en verificación:", error);
       return res.redirect("https://padoptatumascota.netlify.app/verificarEmail?estado=error");
     }
   }
 
-  // ========================
+  // =====================================================
   // Reenviar verificación
-  // ========================
+  // =====================================================
   async reenviarVerificacion(req, res) {
     try {
       const { email } = req.body;
+
       const usuario = await usuariosModelo.findByEmail(email);
       if (!usuario)
         return res.status(404).json({ message: "Correo no registrado" });
+
       if (usuario.verificado)
-        return res
-          .status(400)
-          .json({ message: "Tu cuenta ya está verificada" });
+        return res.status(400).json({ message: "Tu cuenta ya está verificada" });
 
       const token = generarToken(email, usuario.rol, "2h");
-      const link = `https://padoptatumascota.netlify.app/verificarEmail?token=${token}`;
+
+      const link = `https://mascotas-production-7bb1.up.railway.app/usuarios/verificarEmail?token=${token}`;
+
       await sendEmail(
         email,
         "Verificación de correo",
         this.generarHTMLCorreo("verificar", link)
       );
 
-      res.status(200).json({
-        message: "Se envió un nuevo enlace de verificación a tu correo",
-      });
+      res.status(200).json({ message: "Correo enviado correctamente" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Error al reenviar verificación" });
     }
   }
 
-  // ========================
+  // =====================================================
   // Reset contraseña
-  // ========================
+  // =====================================================
   async resetPassword(req, res) {
     try {
       const { token, passwordNueva } = req.body;
-      if (!token) return res.status(400).json({ message: "Token requerido" });
+
+      if (!token)
+        return res.status(400).json({ message: "Token requerido" });
 
       const { email } = verificarJWT(token);
+
       const usuario = await usuariosModelo.findByEmail(email);
       if (!usuario)
         return res.status(404).json({ message: "Usuario no encontrado" });
 
       const claveEncryptada = await bcrypt.hash(passwordNueva, 10);
+
       await usuariosModelo.updateByEmail(email, { clave: claveEncryptada });
 
-      res
-        .status(200)
-        .json({ message: "Contraseña restablecida correctamente" });
+      res.status(200).json({ message: "Contraseña restablecida correctamente" });
     } catch (error) {
       console.error(error);
       res.status(400).json({ message: "Token inválido o expirado" });
     }
   }
 
-  // ========================
+  // =====================================================
   // Eliminar perfil
-  // ========================
+  // =====================================================
   async deleteProfile(req, res) {
     try {
-      const email = req.emailConectado; // Debe venir del middleware de JWT
+      const email = req.emailConectado;
       const usuario = await usuariosModelo.findByEmail(email);
 
-      if (!usuario) {
+      if (!usuario)
         return res.status(404).json({ message: "Usuario no encontrado" });
-      }
 
-      // Usando deleteOne de Mongoose
-      await usuariosModelo.delete({ _id: usuario._id });
+      await usuariosModelo.deleteOne({ _id: usuario._id });
 
-      return res
-        .status(200)
-        .json({ message: "Usuario eliminado correctamente" });
+      res.status(200).json({ message: "Usuario eliminado correctamente" });
     } catch (error) {
       console.error("Error al eliminar perfil:", error);
-      return res.status(500).json({ message: "Error al eliminar perfil" });
+      res.status(500).json({ message: "Error al eliminar perfil" });
     }
   }
 }

@@ -32,6 +32,8 @@ export function verificarToken(req, res, next) {
     req.roles = decoded.roles;
     next();
   } catch (error) {
+
+    console.error("ERROR VERIFICANDO JWT:", error);
     res.status(401).json({ mensaje: "Token no valido" });
   }
 }
