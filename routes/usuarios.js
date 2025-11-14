@@ -3,7 +3,7 @@ const route = express.Router();
 import UsuariosController from "../controllers/usuarios.js";
 import { verificarToken } from "../helpers/autenticacion.js";
 
-route.post("/register", UsuariosController.register); /*.bind(UsuariosController)*/
+route.post("/register", UsuariosController.register.bind(UsuariosController));
 route.post("/login", UsuariosController.login);
 route.get("/perfil", verificarToken, UsuariosController.profile);
 route.put("/perfil", verificarToken, UsuariosController.actualizarPerfil);
