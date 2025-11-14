@@ -261,7 +261,7 @@ class UsuariosController {
           .json({ message: "Tu cuenta ya está verificada" });
 
       const token = generarToken(email, usuario.rol, "2h");
-      const link = `https://padoptatumascota.netlify.app/usuarios/verificarEmail?token=${token}`;
+      const link = `https://padoptatumascota.netlify.app/verificarEmail?token=${token}`;
       await sendEmail(
         email,
         "Verificación de correo",
